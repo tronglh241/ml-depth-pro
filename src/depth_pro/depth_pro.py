@@ -73,6 +73,7 @@ def create_model_and_transforms(
     config: DepthProConfig = DEFAULT_MONODEPTH_CONFIG_DICT,
     device: torch.device = torch.device("cpu"),
     precision: torch.dtype = torch.float32,
+    img_size: int = 1536,
 ) -> Tuple[DepthPro, Compose]:
     """Create a DepthPro model and load weights from `config.checkpoint_uri`.
 
@@ -117,6 +118,7 @@ def create_model_and_transforms(
         last_dims=(32, 1),
         use_fov_head=config.use_fov_head,
         fov_encoder=fov_encoder,
+        img_size=img_size,
     ).to(device)
 
     if precision == torch.half:
@@ -161,6 +163,7 @@ class DepthPro(nn.Module):
         last_dims: tuple[int, int],
         use_fov_head: bool = True,
         fov_encoder: Optional[nn.Module] = None,
+        img_size: int = 1536,
     ):
         """Initialize DepthPro.
 
@@ -177,7 +180,8 @@ class DepthPro(nn.Module):
 
         self.encoder = encoder
         self.decoder = decoder
-    
+        self.img_size = img_size
+
         dim_decoder = decoder.dim_decoder
         self.head = nn.Sequential(
             nn.Conv2d(
@@ -210,10 +214,10 @@ class DepthPro(nn.Module):
         if use_fov_head:
             self.fov = FOVNetwork(num_features=dim_decoder, fov_encoder=fov_encoder)
 
-    @property
-    def img_size(self) -> int:
-        """Return the internal image size of the network."""
-        return self.encoder.img_size
+    # @property
+    # def img_size(self) -> int:
+    #     """Return the internal image size of the network."""
+    #     return self.encoder.img_size
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Decode by projection and fusion of multi-resolution encodings.
@@ -279,11 +283,12 @@ class DepthPro(nn.Module):
             )
 
         canonical_inverse_depth, fov_deg = self.forward(x)
-        if f_px is None:
-            f_px = 0.5 * W / torch.tan(0.5 * torch.deg2rad(fov_deg.to(torch.float)))
-        
-        inverse_depth = canonical_inverse_depth * (W / f_px)
-        f_px = f_px.squeeze()
+        # if f_px is None:
+        #     f_px = 0.5 * W / torch.tan(0.5 * torch.deg2rad(fov_deg.to(torch.float)))
+
+        # inverse_depth = canonical_inverse_depth * (W / f_px)
+        inverse_depth = canonical_inverse_depth
+        # f_px = f_px.squeeze()
 
         if resize:
             inverse_depth = nn.functional.interpolate(
@@ -294,5 +299,5 @@ class DepthPro(nn.Module):
 
         return {
             "depth": depth.squeeze(),
-            "focallength_px": f_px,
+            # "focallength_px": f_px,
         }
