@@ -232,15 +232,15 @@ class DepthPro(nn.Module):
 
         """
         _, _, H, W = x.shape
-        assert H == self.img_size and W == self.img_size
+        assert H == self.img_size and W == self.img_size, (H, W, self.img_size)
 
         encodings = self.encoder(x)
         features, features_0 = self.decoder(encodings)
         canonical_inverse_depth = self.head(features)
 
         fov_deg = None
-        if hasattr(self, "fov"):
-            fov_deg = self.fov.forward(x, features_0.detach())
+        # if hasattr(self, "fov"):
+        #     fov_deg = self.fov.forward(x, features_0.detach())
 
         return canonical_inverse_depth, fov_deg
 

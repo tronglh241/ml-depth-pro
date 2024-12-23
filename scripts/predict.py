@@ -9,7 +9,7 @@ import depth_pro
 
 if __name__ == '__main__':
     start = time.time()
-    model, transforms = depth_pro.create_model_and_transforms(img_size=384)
+    model, transforms = depth_pro.create_model_and_transforms(img_size=1280)
     stop = time.time()
     print(f'Model is initialized in {stop - start:.02f} s.')
 
@@ -20,6 +20,7 @@ if __name__ == '__main__':
         x, _, f_px = depth_pro.load_rgb('data/rear.jpg')
         x = transforms(x)
         x = x.cuda()
+        x = torch.nn.functional.interpolate(x.unsqueeze(0), size=(1280, 1280), align_corners=False, mode='bilinear')
 
         start = time.time()
         prediction = model.infer(x, f_px=f_px)
@@ -37,10 +38,10 @@ if __name__ == '__main__':
             max_invdepth_vizu - min_invdepth_vizu
         )
 
-        cv2.imwrite('mod_384.png', (inverse_depth_normalized.cpu().numpy() * 255).astype(np.uint8))
+        cv2.imwrite('a.png', (inverse_depth_normalized.cpu().numpy() * 255).astype(np.uint8))
 
         flops, macs, params = calculate_flops(
             model=model,
-            input_shape=(1, 3, 384, 384),
+            input_shape=(1, 3, 1280, 1280),
         )
         print("FLOPs:%s   MACs:%s   Params:%s \n" %(flops, macs, params))
