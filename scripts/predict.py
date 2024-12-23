@@ -9,7 +9,7 @@ import depth_pro
 
 if __name__ == '__main__':
     start = time.time()
-    model, transforms = depth_pro.create_model_and_transforms(img_size=1280)
+    model, transforms = depth_pro.create_model_and_transforms(img_size=384)
     stop = time.time()
     print(f'Model is initialized in {stop - start:.02f} s.')
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
         x, _, f_px = depth_pro.load_rgb('data/rear.jpg')
         x = transforms(x)
         x = x.cuda()
-        x = torch.nn.functional.interpolate(x.unsqueeze(0), size=(1280, 1280), align_corners=False, mode='bilinear')
+        x = torch.nn.functional.interpolate(x.unsqueeze(0), size=(384, 384), align_corners=False, mode='bilinear')
 
         start = time.time()
         prediction = model.infer(x, f_px=f_px)
@@ -28,7 +28,8 @@ if __name__ == '__main__':
         print(f'Prediction in {stop - start:.02f} s.')
 
         depth = prediction["depth"]  # Depth in [m].
-        # focallength_px = prediction["focallength_px"]  # Focal length in pixels.
+        focallength_px = prediction["focallength_px"]  # Focal length in pixels.
+        print(focallength_px)
 
         inverse_depth = 1 / depth
         # Visualize inverse depth instead of depth, clipped to [0.1m;250m] range for better visualization.
@@ -40,8 +41,8 @@ if __name__ == '__main__':
 
         cv2.imwrite('a.png', (inverse_depth_normalized.cpu().numpy() * 255).astype(np.uint8))
 
-        flops, macs, params = calculate_flops(
-            model=model,
-            input_shape=(1, 3, 1280, 1280),
-        )
-        print("FLOPs:%s   MACs:%s   Params:%s \n" %(flops, macs, params))
+        # flops, macs, params = calculate_flops(
+        #     model=model,
+        #     input_shape=(1, 3, 384, 384),
+        # )
+        # print("FLOPs:%s   MACs:%s   Params:%s \n" %(flops, macs, params))

@@ -69,13 +69,18 @@ class FOVNetwork(nn.Module):
         if hasattr(self, "encoder"):
             x = F.interpolate(
                 x,
-                size=None,
-                scale_factor=0.25,
+                size=(384, 384),
                 mode="bilinear",
                 align_corners=False,
             )
             x = self.encoder(x)[:, 1:].permute(0, 2, 1)
             lowres_feature = self.downsample(lowres_feature)
+            lowres_feature = F.interpolate(
+                lowres_feature,
+                size=(24, 24),
+                mode="bilinear",
+                align_corners=False,
+            )
             x = x.reshape_as(lowres_feature) + lowres_feature
         else:
             x = lowres_feature

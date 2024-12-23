@@ -239,8 +239,8 @@ class DepthPro(nn.Module):
         canonical_inverse_depth = self.head(features)
 
         fov_deg = None
-        # if hasattr(self, "fov"):
-        #     fov_deg = self.fov.forward(x, features_0.detach())
+        if hasattr(self, "fov"):
+            fov_deg = self.fov.forward(x, features_0.detach())
 
         return canonical_inverse_depth, fov_deg
 
@@ -283,12 +283,11 @@ class DepthPro(nn.Module):
             )
 
         canonical_inverse_depth, fov_deg = self.forward(x)
-        # if f_px is None:
-        #     f_px = 0.5 * W / torch.tan(0.5 * torch.deg2rad(fov_deg.to(torch.float)))
+        if f_px is None:
+            f_px = 0.5 * W / torch.tan(0.5 * torch.deg2rad(fov_deg.to(torch.float)))
 
-        # inverse_depth = canonical_inverse_depth * (W / f_px)
-        inverse_depth = canonical_inverse_depth
-        # f_px = f_px.squeeze()
+        inverse_depth = canonical_inverse_depth * (W / f_px)
+        f_px = f_px.squeeze()
 
         if resize:
             inverse_depth = nn.functional.interpolate(
@@ -299,5 +298,5 @@ class DepthPro(nn.Module):
 
         return {
             "depth": depth.squeeze(),
-            # "focallength_px": f_px,
+            "focallength_px": f_px,
         }
